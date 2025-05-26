@@ -1,0 +1,168 @@
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { Ionicons } from '@expo/vector-icons';
+import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+const criadores = [
+  {
+    nome: 'Antonio Caue',
+    github: 'https://github.com/ntncaue',
+  },
+  {
+    nome: 'Marcelo Bonfim',
+    github: 'https://github.com/marcelooou',
+  },
+  {
+    nome: 'Felipe Gomes',
+    github: 'https://github.com/felipeorikasa',
+  },
+];
+
+export default function SobreScreen() {
+  return (
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ThemedView style={styles.container}>
+        <View style={styles.header}>
+          <Ionicons name="business" size={64} color="#007AFF" />
+          <ThemedText type="title" style={styles.title}>Mottu</ThemedText>
+        </View>
+
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Sobre o Sistema</ThemedText>
+          <ThemedText style={styles.text}>
+            O sistema de localização de motos da Mottu utiliza tecnologia ESP32 para identificar e localizar
+            cada moto em nosso pátio. Cada moto possui um identificador único que permite sua localização
+            precisa dentro do pátio.
+          </ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Como Funciona</ThemedText>
+          <View style={styles.stepContainer}>
+            <View style={styles.step}>
+              <Ionicons name="search" size={24} color="#007AFF" />
+              <ThemedText style={styles.stepText}>
+                1. Busque a moto pela placa ou identificador ESP32
+              </ThemedText>
+            </View>
+            <View style={styles.step}>
+              <Ionicons name="map" size={24} color="#007AFF" />
+              <ThemedText style={styles.stepText}>
+                2. Visualize a localização no mapa do pátio
+              </ThemedText>
+            </View>
+            <View style={styles.step}>
+              <Ionicons name="bicycle" size={24} color="#007AFF" />
+              <ThemedText style={styles.stepText}>
+                3. Encontre a moto facilmente usando as coordenadas
+              </ThemedText>
+            </View>
+          </View>
+        </ThemedView>
+
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Contato</ThemedText>
+          <View style={styles.contactContainer}>
+            <View style={styles.contactItem}>
+              <Ionicons name="mail" size={24} color="#007AFF" />
+              <ThemedText style={styles.contactText}>contato@mottu.com.br</ThemedText>
+            </View>
+            <View style={styles.contactItem}>
+              <Ionicons name="call" size={24} color="#007AFF" />
+              <ThemedText style={styles.contactText}>(11) 1234-5678</ThemedText>
+            </View>
+          </View>
+        </ThemedView>
+
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Criadores</ThemedText>
+          <View style={styles.criadoresContainer}>
+            {criadores.map((criador) => (
+              <View key={criador.github} style={styles.criadorItem}>
+                <Ionicons name="logo-github" size={24} color="#333" />
+                <ThemedText style={styles.criadorNome}>{criador.nome}</ThemedText>
+                <TouchableOpacity onPress={() => Linking.openURL(criador.github)}>
+                  <ThemedText style={styles.criadorLink}>{criador.github.replace('https://', '')}</ThemedText>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        </ThemedView>
+      </ThemedView>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 32,
+  },
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 16,
+  },
+  title: {
+    marginTop: 16,
+    fontSize: 32,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    marginBottom: 16,
+  },
+  text: {
+    lineHeight: 24,
+    color: '#666',
+  },
+  stepContainer: {
+    gap: 16,
+  },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepText: {
+    flex: 1,
+    color: '#666',
+  },
+  contactContainer: {
+    gap: 12,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  contactText: {
+    color: '#666',
+  },
+  criadoresContainer: {
+    gap: 16,
+    marginTop: 8,
+    marginBottom: 32,
+  },
+  criadorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  criadorNome: {
+    fontWeight: 'bold',
+    color: '#333',
+    marginRight: 8,
+  },
+  criadorLink: {
+    color: '#007AFF',
+    textDecorationLine: 'underline',
+    fontSize: 13,
+  },
+}); 
