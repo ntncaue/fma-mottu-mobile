@@ -7,7 +7,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 
-export default function LoginScreen() {
+function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
@@ -60,6 +60,8 @@ export default function LoginScreen() {
     </ThemedView>
   );
 }
+
+export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: {

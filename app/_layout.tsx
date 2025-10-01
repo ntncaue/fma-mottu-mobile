@@ -1,51 +1,63 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import * as SplashScreen from 'expo-splash-screen';
+import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+// Importe AppThemeProvider e AuthProvider da sua estrutura
 import { AppThemeProvider } from '@/hooks/useAppTheme';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthProvider, useSession } from '@/hooks/useSession'; // useSession contém user e loading
 
+// Garante que a splash screen não desapareça antes de carregar as fontes
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { user, loading } = useAuth();
+  // Obtemos user, loading do hook de sessão
+  const { user, isLoading } = useSession(); 
   const router = useRouter();
   const segments = useSegments();
 
+  // --- Lógica de Carregamento de Fontes ---
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    // Adicione outras fontes aqui
   });
 
+  // Tratar erros de fonte
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
+  // Esconder a splash screen quando as fontes estiverem carregadas
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
 
+  // --- Lógica de Redirecionamento de Autenticação ---
   useEffect(() => {
-    if (loading || !loaded) return;
+    // Espera até que as fontes e o estado de autenticação (isLoading) estejam prontos
+    if (isLoading || !loaded) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
     if (!user && !inAuthGroup) {
+      // Se não está logado e não está no grupo (auth), redireciona para login
       router.replace('/(auth)/login');
     } else if (user && inAuthGroup) {
+      // Se está logado e ainda está no grupo (auth), redireciona para a home
       router.replace('/(tabs)');
     }
-  }, [user, loading, loaded, segments, router]);
+  }, [user, isLoading, loaded, segments, router]); // Adicionei 'isLoading' ao invés de 'loading'
 
-  if (!loaded || loading) {
+  // Retorna null enquanto as fontes ou o Firebase estão carregando
+  if (!loaded || isLoading) { 
     return null;
   }
 
@@ -55,7 +67,7 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
+          <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
         </Stack>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       </ThemeProvider>
@@ -63,7 +75,7 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <AppThemeProvider>
       <AuthProvider>
@@ -72,3 +84,5 @@ export default function RootLayout() {
     </AppThemeProvider>
   );
 }
+
+export default RootLayout;
