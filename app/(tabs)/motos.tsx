@@ -13,25 +13,7 @@ const listaInicial = [
   { id: '2', nome: '', placa: 'XYZ5678', identificador: 'ESP32_002' },
 ];
 
-const ThemedButton = ({ title, onPress, color, style }: { title: string, onPress: () => void, color?: string, style?: any }) => {
-  const { theme } = useAppTheme();
-  const tintColor = useThemeColor({}, 'tint');
-  const backgroundColor = useThemeColor({}, 'background');
-  
-  const isPrimary = !color;
-  const buttonBackgroundColor = color || tintColor;
-
-  let textColor: string = 'white';
-  if (isPrimary && theme === 'dark') {
-    textColor = backgroundColor;
-  }
-
-  return (
-    <TouchableOpacity onPress={onPress} style={[estilos.button, { backgroundColor: buttonBackgroundColor }, style]}>
-      <ThemedText style={[estilos.buttonText, { color: textColor }]}>{title}</ThemedText>
-    </TouchableOpacity>
-  );
-};
+import { ThemedButton } from '@/components/ThemedButton';
 
 export default function Motos() {
   const router = useRouter();

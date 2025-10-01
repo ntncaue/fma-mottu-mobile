@@ -6,6 +6,7 @@
       "@/*": [
         "./*"
       ]
+      // ✅ REMOVIDA: A entrada "@firebase/auth"
     }
   },
   "include": [
