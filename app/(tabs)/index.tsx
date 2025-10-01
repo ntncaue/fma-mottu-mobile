@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, ScrollView, Platform } from 'react-native';
 
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 const motosMock = [
   {
@@ -31,109 +31,123 @@ const motosMock = [
 ];
 
 export default function HomeScreen() {
+  const { theme, setTheme } = useAppTheme();
+  const iconColor = useThemeColor({}, 'icon');
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+  const cardBackgroundColor = useThemeColor({ light: '#FFFFFF', dark: '#2C2C2C' }, 'background');
+  const cardBorderColor = useThemeColor({ light: '#EFEFEF', dark: '#444' }, 'background');
+
+  const cardStyle = theme === 'light' ? styles.cardLight : styles.cardDark;
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#FFFFFF', dark: '#1D1D1D' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.searchContainer}>
-          <TouchableOpacity style={styles.searchBar}>
-            <Ionicons name="search" size={24} color="#666" />
-            <ThemedText style={styles.searchText}>Buscar por placa ou ESP32</ThemedText>
+    <ThemedView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <ThemedView style={styles.header}>
+          <ThemedText type="title">Início</ThemedText>
+          <TouchableOpacity
+            onPress={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            style={[styles.themeButton, { borderColor: iconColor }]}
+          >
+            <Ionicons 
+              name={theme === 'dark' ? 'sunny' : 'moon'} 
+              size={24} 
+              color={iconColor} 
+            />
           </TouchableOpacity>
         </ThemedView>
 
         <ThemedView style={styles.sectionContainer}>
-          <ThemedText type="title" style={styles.sectionTitle}>Motos no Pátio</ThemedText>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Motos no Pátio</ThemedText>
           {motosMock.map((moto) => (
-            <ThemedView key={moto.id} style={styles.motoCard}>
-              <ThemedView style={styles.motoInfo}>
-                <ThemedText type="subtitle">{moto.modelo}</ThemedText>
-                <ThemedText>Placa: {moto.placa}</ThemedText>
-                <ThemedText>ESP32: {moto.esp32Id}</ThemedText>
-                <TouchableOpacity style={styles.localizarButton}>
-                  <ThemedText style={styles.localizarButtonText}>Localizar no Pátio</ThemedText>
-                </TouchableOpacity>
-              </ThemedView>
+            <ThemedView key={moto.id} style={[styles.card, cardStyle]}>
+              <ThemedText type="subtitle">{moto.modelo}</ThemedText>
+              <ThemedText>Placa: {moto.placa}</ThemedText>
+              <ThemedText>ESP32: {moto.esp32Id}</ThemedText>
+              <TouchableOpacity style={[styles.localizarButton, { backgroundColor: tintColor }]}>
+                <ThemedText style={[styles.localizarButtonText, { color: theme === 'dark' ? '#000' : '#fff' }]}>Localizar no Pátio</ThemedText>
+              </TouchableOpacity>
             </ThemedView>
           ))}
         </ThemedView>
 
         <ThemedView style={styles.sectionContainer}>
-          <ThemedText type="title" style={styles.sectionTitle}>Estatísticas</ThemedText>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Estatísticas</ThemedText>
           <View style={styles.statsContainer}>
-            <ThemedView style={styles.statCard}>
-              <Ionicons name="bicycle" size={24} color="#007AFF" />
-              <ThemedText style={styles.statNumber}>150</ThemedText>
-              <ThemedText style={styles.statLabel}>Total de Motos</ThemedText>
+            <ThemedView style={[styles.card, cardStyle, styles.statCard]}>
+              <Ionicons name="bicycle" size={32} color={tintColor} />
+              <ThemedText type="title">150</ThemedText>
+              <ThemedText>Total de Motos</ThemedText>
             </ThemedView>
-            <ThemedView style={styles.statCard}>
-              <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-              <ThemedText style={styles.statNumber}>145</ThemedText>
-              <ThemedText style={styles.statLabel}>ESP32 Ativos</ThemedText>
+            <ThemedView style={[styles.card, cardStyle, styles.statCard]}>
+              <Ionicons name="checkmark-circle" size={32} color="#4CAF50" />
+              <ThemedText type="title">145</ThemedText>
+              <ThemedText>ESP32 Ativos</ThemedText>
             </ThemedView>
           </View>
         </ThemedView>
-      </ThemedView>
-    </ParallaxScrollView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
+  },
+  container: {
     padding: 16,
   },
-  headerImage: {
-    height: 200,
-    width: '100%',
-    position: 'absolute',
-  },
-  searchContainer: {
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  searchBar: {
+  header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    padding: 12,
-    borderRadius: 12,
-    gap: 8,
+    marginBottom: 24,
+    backgroundColor: 'transparent',
   },
-  searchText: {
-    color: '#666',
+  themeButton: {
+    padding: 8,
+    borderRadius: 24,
+    borderWidth: 1,
   },
   sectionContainer: {
     marginBottom: 24,
+    backgroundColor: 'transparent',
   },
   sectionTitle: {
     marginBottom: 16,
   },
-  motoCard: {
-    backgroundColor: '#F5F5F5',
+  card: {
     borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 16,
     padding: 16,
+    marginBottom: 16,
   },
-  motoInfo: {
-    gap: 8,
+  cardLight: {
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  cardDark: {
+    backgroundColor: '#2C2C2C',
+    borderWidth: 1,
+    borderColor: '#444',
   },
   localizarButton: {
-    backgroundColor: '#007AFF',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 16,
   },
   localizarButtonText: {
-    color: 'white',
     fontWeight: 'bold',
   },
   statsContainer: {
@@ -142,19 +156,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
     gap: 8,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  statLabel: {
-    color: '#666',
-    textAlign: 'center',
   },
 });
