@@ -1,20 +1,18 @@
 import { auth } from '@/services/firebase';
-import { User, onAuthStateChanged } from 'firebase/auth';
-// Importamos useRouter e useSegments, necessários para o redirecionamento
 import { useRouter, useSegments } from 'expo-router';
+import { User, onAuthStateChanged } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 // Tipagem do contexto
 interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
+  // Use 'isLoading' consistentemente
+  isLoading: boolean; 
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// =========================================================================
-// 1. Hook de Proteção: Gerencia o redirecionamento entre (auth) e (tabs)
-// =========================================================================
+// Hook de Proteção (Lógica de Redirecionamento)
 function useProtectedRoute(user: User | null, isLoading: boolean) {
   const segments = useSegments();
   const router = useRouter();
@@ -23,34 +21,31 @@ function useProtectedRoute(user: User | null, isLoading: boolean) {
   const inAuthGroup = segments[0] === '(auth)';
 
   useEffect(() => {
-    if (isLoading) return; // Espera o Firebase terminar a verificação
+    // ESSA É A CHAVE: Espera até que o estado de carregamento (Firebase) esteja pronto
+    if (isLoading) return; 
 
     if (!user && !inAuthGroup) {
-      // Se NÃO está logado e NÃO está no grupo de login, redireciona para login
       router.replace('/(auth)/login');
     } else if (user && inAuthGroup) {
-      // Se está logado e AINDA está no grupo de login/cadastro, redireciona para a home
       router.replace('/(tabs)');
     }
   }, [user, isLoading, inAuthGroup, segments, router]);
 }
-// =========================================================================
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Listener do Firebase para mudanças de estado
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
-      setIsLoading(false);
+      // ESSA CHAMADA GARANTE QUE O CARREGAMENTO SEMPRE TERMINE
+      setIsLoading(false); 
     });
 
     return () => unsubscribe();
   }, []);
 
-  // 2. O hook de proteção é chamado aqui
   useProtectedRoute(user, isLoading);
 
   return (

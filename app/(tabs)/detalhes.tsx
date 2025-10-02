@@ -1,14 +1,14 @@
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import React, { useLayoutEffect } from 'react';
 import { StyleSheet } from 'react-native';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
 
 export default function DetalhesScreen() {
   const params = useLocalSearchParams();
   const navigation = useNavigation();
 
-  let moto = { placa: 'ABC1234', status: 'Estacionada', localizacao: { x: 10, y: 20 }, nome: 'Moto Padrão' };
+  let moto: any;
   if (params.moto) {
     try {
       moto = JSON.parse(params.moto as string);
@@ -17,23 +17,34 @@ export default function DetalhesScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: moto.nome || 'Detalhes da Moto',
+      title: moto ? moto.modelo || 'Detalhes da Moto' : 'Detalhes',
       headerShown: true,
     });
   }, [navigation, moto]);
+
+  if (!moto) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText>Selecione uma moto para ver os detalhes.</ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="subtitle">Placa</ThemedText>
       <ThemedText style={styles.info}>{moto.placa}</ThemedText>
 
-      <ThemedText type="subtitle">Status</ThemedText>
-      <ThemedText style={styles.info}>{moto.status || 'Desconhecido'}</ThemedText>
+      <ThemedText type="subtitle">Modelo</ThemedText>
+      <ThemedText style={styles.info}>{moto.modelo || 'Não informado'}</ThemedText>
 
-      {moto.localizacao && (
+      <ThemedText type="subtitle">Ano</ThemedText>
+      <ThemedText style={styles.info}>{moto.ano || 'Não informado'}</ThemedText>
+
+      {moto.patioId && (
         <>
-          <ThemedText type="subtitle">Localização</ThemedText>
-          <ThemedText style={styles.info}>X: {moto.localizacao.x}, Y: {moto.localizacao.y}</ThemedText>
+          <ThemedText type="subtitle">Pátio ID</ThemedText>
+          <ThemedText style={styles.info}>{moto.patioId}</ThemedText>
         </>
       )}
     </ThemedView>
@@ -45,6 +56,8 @@ const styles = StyleSheet.create({
     flex: 1, 
     padding: 16, 
     gap: 8,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   info: {
     fontSize: 16,

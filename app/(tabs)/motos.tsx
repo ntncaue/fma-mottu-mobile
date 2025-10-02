@@ -1,28 +1,30 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View, TouchableOpacity, Modal, Platform } from 'react-native';
-
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useAppTheme } from '@/hooks/useAppTheme';
-
-const listaInicial = [
-  { id: '1', nome: '', placa: 'ABC1234', identificador: 'ESP32_001' },
-  { id: '2', nome: '', placa: 'XYZ5678', identificador: 'ESP32_002' },
-];
+import React, { useEffect, useState } from 'react';
+import { FlatList, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedButton } from '@/components/ThemedButton';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { useThemeColor } from '@/hooks/useThemeColor';
+
+import { Moto, addMoto, deleteMoto, getMotosByPatio, moveMotoToPatio } from '../../services/serviceMotos';
+import { Patio, getPatiosByFilial } from '../../services/servicePatios';
 
 export default function Motos() {
   const router = useRouter();
   const { theme } = useAppTheme();
-  const [motos, setMotos] = useState(listaInicial);
-  const [nome, setNome] = useState('');
+  const [motos, setMotos] = useState<Moto[]>([]);
+  const [patios, setPatios] = useState<Patio[]>([]);
+  const [patioSelecionado, setPatioSelecionado] = useState<number | null>(null);
+
+  // campos de edição
   const [placa, setPlaca] = useState('');
-  const [identificador, setIdentificador] = useState('');
-  const [editando, setEditando] = useState<string | null>(null);
+  const [modelo, setModelo] = useState('');
+  const [ano, setAno] = useState('');
+  const [patioId, setPatioId] = useState('');
+  const [editando, setEditando] = useState<number | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   const textColor = useThemeColor({}, 'text');
@@ -30,45 +32,155 @@ export default function Motos() {
   const placeholderColor = useThemeColor({ light: '#999', dark: '#777' }, 'background');
 
   useEffect(() => {
-    AsyncStorage.getItem('motos').then(data => {
-      if (data) setMotos(JSON.parse(data));
-    });
+    carregarPatios();
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem('motos', JSON.stringify(motos));
-  }, [motos]);
+    if (patioSelecionado) {
+      carregarMotos(patioSelecionado);
+    }
+  }, [patioSelecionado]);
+
+  const carregarPatios = async () => {
+    try {
+      const data = await getPatiosByFilial(1);
+      setPatios(data);
+      if (data.length > 0) setPatioSelecionado(data[0].patioId);
+    } catch (error) {
+      console.error('Erro ao carregar pátios:', error);
+      alert('Erro ao carregar pátios');
+    }
+  };
+
+  const carregarMotos = async (patioId: number) => {
+    try {
+      const data = await getMotosByPatio(patioId);
+      setMotos(data);
+    } catch (error) {
+      console.error('Erro ao carregar motos:', error);
+      alert('Erro ao carregar motos');
+    }
+  };
 
   function limparCampos() {
     setEditando(null);
-    setNome('');
     setPlaca('');
-    setIdentificador('');
+    setModelo('');
+    setAno('');
+    setPatioId('');
     setModalVisible(false);
   }
 
-  function salvarMoto() {
-    if (!placa || !identificador) return;
-    if (editando) {
-      setMotos(motos.map(m => m.id === editando ? { ...m, nome, placa, identificador } : m));
-    } else {
-      setMotos([...motos, { id: (motos.length + 1).toString(), nome, placa, identificador }]);
+  const salvarMoto = async () => {
+    if (!patioId || (!editando && (!placa || !modelo || !ano))) {
+      alert('Preencha todos os campos!');
+      return;
     }
-    limparCampos();
-  }
-
-  function editarMoto(moto: any) {
-    setEditando(moto.id);
-    setNome(moto.nome || '');
+  
+    try {
+      if (editando) {
+        // Mover moto existente
+        await moveMotoToPatio(editando, Number(patioId));
+        alert('Moto movida com sucesso!');
+      } else {
+        // Adicionar nova moto usando a service existente
+        await addMoto({
+          placa,
+          modelo,
+          ano: Number(ano),
+          patioId: Number(patioId),
+        });
+        alert('Moto adicionada com sucesso!');
+      }
+  
+      limparCampos();
+      if (patioSelecionado) carregarMotos(patioSelecionado);
+    } catch (error: any) {
+      console.error('Erro ao salvar moto:', error.response?.data || error.message);
+      alert('Erro: ' + (error.response?.statusText || error.message));
+    }
+  };
+  
+  const editarMoto = (moto: Moto) => {
+    setEditando(moto.motoId);
     setPlaca(moto.placa);
-    setIdentificador(moto.identificador);
+    setModelo(moto.modelo);
+    setAno(moto.ano.toString());
+    setPatioId(moto.patioId.toString());
     setModalVisible(true);
-  }
+  };
 
   const cardStyle = theme === 'light' ? estilos.cardLight : estilos.cardDark;
 
   return (
     <ThemedView style={estilos.screen}>
+      {/* Seletor de pátio */}
+      <ThemedView style={estilos.header}>
+        <ThemedText type="title">Motos</ThemedText>
+        <Picker
+          selectedValue={patioSelecionado}
+          onValueChange={(value) => setPatioSelecionado(value)}
+          style={estilos.picker}
+        >
+          {patios.map((patio) => (
+            <Picker.Item key={patio.patioId} label={patio.nomePatio} value={patio.patioId} />
+          ))}
+        </Picker>
+      </ThemedView>
+
+      {/* Botão de adicionar moto */}
+      <ThemedView style={{ paddingHorizontal: 16 }}>
+        <ThemedButton
+          title="+ Adicionar Moto"
+          onPress={() => {
+            setEditando(null);
+            setPlaca('');
+            setModelo('');
+            setAno('');
+            setPatioId(patioSelecionado?.toString() || '');
+            setModalVisible(true);
+          }}
+        />
+      </ThemedView>
+
+      {/* Lista de motos */}
+      <FlatList
+        data={motos}
+        keyExtractor={(item) => item.motoId.toString()}
+        renderItem={({ item }) => (
+          <ThemedView style={[estilos.card, cardStyle]}>
+            <ThemedText>Placa: {item.placa}</ThemedText>
+            <ThemedText>Modelo: {item.modelo}</ThemedText>
+            <ThemedText>Ano: {item.ano}</ThemedText>
+            <ThemedText>Pátio ID: {item.patioId}</ThemedText>
+
+            <View style={estilos.botoes}>
+              <ThemedButton
+                style={{ flex: 1 }}
+                title="Editar"
+                color="#555"
+                onPress={() => editarMoto(item)}
+              />
+              <ThemedButton
+                style={{ flex: 1 }}
+                title="Excluir"
+                color="#aa2222"
+                onPress={async () => {
+                  try {
+                    await deleteMoto(item.motoId);
+                    if (patioSelecionado) carregarMotos(patioSelecionado);
+                  } catch {
+                    alert('Erro ao excluir moto');
+                  }
+                }}
+              />
+            </View>
+          </ThemedView>
+        )}
+        contentContainerStyle={estilos.listContainer}
+      />
+
+      {/* Modal de edição */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -77,55 +189,72 @@ export default function Motos() {
       >
         <ThemedView style={estilos.modalContainer}>
           <ThemedView style={[estilos.modalView, cardStyle]}>
-            <ThemedText type="subtitle" style={estilos.modalTitle}>{editando ? 'Editar Moto' : 'Adicionar Moto'}</ThemedText>
-            <ThemedText>Nome (opcional):</ThemedText>
-            <TextInput style={[estilos.campo, { color: textColor, borderColor: borderColor }]} value={nome} onChangeText={setNome} placeholder="Nome" placeholderTextColor={placeholderColor} />
+            <ThemedText type="subtitle" style={estilos.modalTitle}>
+              {editando ? 'Editar Pátio da Moto' : 'Adicionar Moto'}
+            </ThemedText>
+
             <ThemedText>Placa:</ThemedText>
-            <TextInput style={[estilos.campo, { color: textColor, borderColor: borderColor }]} value={placa} onChangeText={setPlaca} placeholder="Placa" placeholderTextColor={placeholderColor} />
-            <ThemedText>Identificador:</ThemedText>
-            <TextInput style={[estilos.campo, { color: textColor, borderColor: borderColor }]} value={identificador} onChangeText={setIdentificador} placeholder="Identificador ESP32" placeholderTextColor={placeholderColor} />
-            <ThemedButton title={editando ? 'Salvar Alteração' : 'Adicionar Moto'} onPress={salvarMoto} />
+            <TextInput
+              style={[estilos.campo, { color: textColor, borderColor }]}
+              value={placa}
+              editable={!editando}
+              onChangeText={setPlaca}
+              placeholderTextColor={placeholderColor}
+            />
+
+            <ThemedText>Modelo:</ThemedText>
+            <TextInput
+              style={[estilos.campo, { color: textColor, borderColor }]}
+              value={modelo}
+              editable={!editando}
+              onChangeText={setModelo}
+              placeholderTextColor={placeholderColor}
+            />
+
+            <ThemedText>Ano:</ThemedText>
+            <TextInput
+              style={[estilos.campo, { color: textColor, borderColor }]}
+              value={ano}
+              editable={!editando}
+              onChangeText={setAno}
+              keyboardType="numeric"
+              placeholderTextColor={placeholderColor}
+            />
+
+            <ThemedText>Pátio ID:</ThemedText>
+            <TextInput
+              style={[estilos.campo, { color: textColor, borderColor }]}
+              value={patioId}
+              onChangeText={setPatioId}
+              keyboardType="numeric"
+              placeholder="1"
+              placeholderTextColor={placeholderColor}
+            />
+
+            <ThemedButton
+              title={editando ? 'Mover de Pátio' : 'Adicionar Moto'}
+              onPress={salvarMoto}
+            />
             <ThemedButton title="Cancelar" color="#888" onPress={limparCampos} />
           </ThemedView>
         </ThemedView>
       </Modal>
-
-      <FlatList
-        data={motos}
-        keyExtractor={item => item.id}
-        ListHeaderComponent={() => (
-          <ThemedView style={estilos.header}>
-            <ThemedText type="title">Motos</ThemedText>
-            <ThemedButton title="Adicionar" onPress={() => setModalVisible(true)} />
-          </ThemedView>
-        )}
-        renderItem={({ item }) => (
-          <ThemedView style={[estilos.card, cardStyle]}>
-            {item.nome ? <ThemedText type="subtitle">{item.nome}</ThemedText> : null}
-            <ThemedText>Placa: {item.placa}</ThemedText>
-            <ThemedText>Identificador: {item.identificador}</ThemedText>
-            <View style={estilos.botoes}>
-              <ThemedButton style={{flex:1}} title="Detalhes" onPress={() => router.push({ pathname: '/(tabs)/detalhes', params: { moto: JSON.stringify(item) } })} />
-              <ThemedButton style={{flex:1}} title="Ver no Mapa" onPress={() => router.push({ pathname: '/(tabs)/mapa', params: { moto: JSON.stringify(item) } })} />
-              <ThemedButton style={{flex:1}} title="Editar" color="#555" onPress={() => editarMoto(item)} />
-            </View>
-          </ThemedView>
-        )}
-        contentContainerStyle={estilos.listContainer}
-      />
     </ThemedView>
   );
 }
 
 const estilos = StyleSheet.create({
   screen: { flex: 1 },
-  listContainer: { padding: 16 },
+  listContainer: { padding: 16, paddingBottom: 32 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: 'transparent',
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  picker: {
+    marginTop: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
   },
   card: {
     borderRadius: 12,
@@ -146,17 +275,6 @@ const estilos = StyleSheet.create({
   },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
   campo: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 16 },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 4,
-  },
-  buttonText: {
-    fontWeight: 'bold',
-  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',

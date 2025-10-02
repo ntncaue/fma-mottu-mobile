@@ -1,9 +1,19 @@
-import { TouchableOpacity, StyleSheet } from 'react-native';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { ThemedText } from './ThemedText';
 
-export const ThemedButton = ({ title, onPress, color, style }: { title: string, onPress: () => void, color?: string, style?: any }) => {
+// 1. Tipagem atualizada para incluir 'disabled'
+interface ButtonProps {
+  title: string;
+  onPress: () => void | Promise<void>;
+  color?: string;
+  style?: ViewStyle;
+  disabled?: boolean; // Nova propriedade adicionada
+}
+
+export const ThemedButton = ({ title, onPress, color, style, disabled = false }: ButtonProps) => {
   const { theme } = useAppTheme();
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
@@ -18,8 +28,20 @@ export const ThemedButton = ({ title, onPress, color, style }: { title: string, 
     textColor = 'white';
   }
 
+  // Define a opacidade para desabilitado
+  const finalOpacity = disabled ? 0.6 : 1;
+
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.button, { backgroundColor: buttonBackgroundColor }, style]}>
+    // 2. Aplicando as props 'onPress' e 'disabled'
+    <TouchableOpacity 
+      onPress={onPress} 
+      disabled={disabled} 
+      style={[
+        styles.button, 
+        { backgroundColor: buttonBackgroundColor, opacity: finalOpacity }, 
+        style
+      ]}
+    >
       <ThemedText style={[styles.buttonText, { color: textColor }]}>{title}</ThemedText>
     </TouchableOpacity>
   );
